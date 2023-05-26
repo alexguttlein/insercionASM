@@ -31,7 +31,7 @@
 
 
 global	main
-extern  puts
+extern  puts 
 extern  printf
 extern  fopen
 extern  fclose
@@ -41,11 +41,11 @@ extern  sscanf
 section	.data
     fileName        db  "archivo1.dat",0
     modo            db  "rb",0
-    msjErrorOpen	db	"Error apertura de archivo",0,10
+    msjErrorOpen	db	"Error apertura de archivo.",0,10
 
 	msjDebug		db	"leyendo...",0
 
-	longRegistro	dw	0
+	longRegistro	dw	0 
 	msjLong			db	"El registro tiene %hi valores",10,0
 
 	;debugFormat		db	"numero leido: %hi",10,0
