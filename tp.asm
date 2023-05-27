@@ -49,6 +49,7 @@ section	.data
 	msjMovimiento	db	"Se desplaza el valor %hi desde la posicion %hi a la posicion %hi",10,0
 	msjInsercion	db	"Se inserta el valor %hi en la posicion %hi",10,0
 	saltoDeLinea	db	" ",10,0
+	caracterVacio	dw	0
 
 	debugFormat		db	"%hi ",0
 	debugRsi		db	"rsi: %i",10,0
@@ -189,23 +190,10 @@ insertarValor:
 	mov		cx,word[valorLeido]
 	mov		word[vectorOrdenado+rsi],cx
 
-push	rdi
+	push	rdi
+	call	imprimirInsercion
+	pop		rdi
 
-sub		rax,rax
-sub		rbx,rbx
-
-mov		rax,rsi
-mov		rbx,2	
-idiv	bl		
-
-	mov		rcx,msjInsercion
-	mov		dx,word[vectorOrdenado+rsi]
-	mov		r8,rax
-	sub		rsp,32
-	call	printf
-	add		rsp,32
-
-pop		rdi
 ret
 
 ;***************************************************************
@@ -219,19 +207,27 @@ moverSiguiente:
 	mov		ax,word[vectorOrdenado+rdi]		;me guardo el valor que hay al final del vector
 	mov		word[vectorOrdenado+rdi+2],ax	;muevo el ultimo valor a la posicion siguiente del vector
 	
-	push	rdi
-	push	rsi
-	;call	leerVector
-	call	imprimirMovimiento
-	pop		rsi
-	pop		rdi
+	mov		ax,word[caracterVacio]
+	mov		word[vectorOrdenado+rdi],ax
 
 	cmp		rsi,rdi
 	je		finMoverValores					;si rsi = rdi es porque llegue a la posicion donde debo insertar
+	
+	push	rdi
+	push	rsi
+	call	leerVector
+	call	imprimirMovimiento
+	call	leerVector
+	pop		rsi
+	pop		rdi
+	
 	sub		rdi,2
 	jmp		moverSiguiente
 
 finMoverValores:
+	push	rsi
+	call	leerVector
+	pop		rsi
 ret
 
 ;***************************************************************
@@ -260,7 +256,29 @@ imprimirMovimiento:
 	sub		rsp,32
 	call	printf
 	add		rsp,32
-	
+ret
+
+;***************************************************************
+
+;-------------------------
+;IMPRIMIR INSERCION
+;-------------------------
+imprimirInsercion:
+	sub		rax,rax
+	sub		rbx,rbx
+
+	mov		rax,rsi
+	mov		rbx,2	
+	idiv	bl		
+
+	mov		rcx,msjInsercion
+	mov		dx,word[vectorOrdenado+rsi]
+	mov		r8,rax
+	sub		rsp,32
+	call	printf
+	add		rsp,32
+
+	call	leerVector
 ret
 
 ;***************************************************************
@@ -278,13 +296,15 @@ ret
 ;***************************************************************
 
 ;-------------------------
-;LEER VECTOR
+;LEER VECTOR AL MOVER
 ;-------------------------
 leerVector:
 ;prueba para revisar si el vector tiene todos los valores
 	mov		rsi,0
 	sub		rcx,rcx
+	sub		rdx,rdx
 	mov		cx,word[longRegistro]
+	add		cx,1
 inicioVec:
 	push	rcx
 
