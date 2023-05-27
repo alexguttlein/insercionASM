@@ -39,19 +39,20 @@ extern  fread
 extern  sscanf
 
 section	.data
-    fileName        db  "archivo2.dat",0
+    fileName        db  "archivo1.dat",0
     modo            db  "rb",0
     msjErrorOpen	db	"Error apertura de archivo.",0,10
-
-	msjDebug		db	"leyendo...",0
 
 	longRegistro	dw	0 
 	msjLong			db	"El registro tiene %hi valores",10,0
 
-	;debugFormat		db	"numero leido: %hi",10,0
+	msjMovimiento	db	"Se desplaza el valor %hi desde la posicion %hi a la posicion %hi",10,0
+	msjInsercion	db	"Se inserta el valor %hi en la posicion %hi",10,0
+	saltoDeLinea	db	" ",10,0
+
 	debugFormat		db	"%hi ",0
 	debugRsi		db	"rsi: %i",10,0
-	debugVector		dw	1,2,3,4,5
+	msjDebug		db	"leyendo...",0
 
 section	.bss
     registro		resw	30
@@ -63,20 +64,14 @@ section	.bss
 	
 section	.text
 main:
-    call	aperturaArchivos
+    call	aperturaArchivo
 	cmp		byte[registroValido],'n'
 	je		finProg
 
-	call	leerRegistro
-	call	leerVector
+	call	procesarRegistro
+	;call	leerVector
 
 	call	cierreArchivo
-
-;mov		rcx,msjLong
-;mov		dx,word[longRegistro]
-;sub		rsp,32
-;call	printf
-;add		rsp,32
 
 finProg:
 ret
@@ -86,7 +81,7 @@ ret
 ;-------------------------
 ;APERTURA ARCHIVO
 ;-------------------------
-aperturaArchivos:
+aperturaArchivo:
 	mov		byte[registroValido],'n'
 
 	mov		rcx,fileName
@@ -113,9 +108,9 @@ ret
 ;***************************************************************
 
 ;-------------------------
-;LEER REGISTRO
+;PROCESAR REGISTRO
 ;-------------------------
-leerRegistro:
+procesarRegistro:
 	mov		rsi,0
 leerSiguiente:
 	mov		rcx,registro 		;registro entrada
@@ -177,7 +172,6 @@ compararSiguiente:
 	cmp		rsi,rax						;comparo long de registro con rsi para saber si estoy en el final del vector
 	je		insertarValor				;si no hay siguiente registro, se inserta directo al final
 
-;falta comparar si el valor leido es menor al del vector
 	mov		rdi,rax						;guardo en el rdi la posicion final del vector
 
 	mov		bx,word[valorLeido]
@@ -188,14 +182,30 @@ compararSiguiente:
 	jmp		compararSiguiente			;si es mayor, se tiene que comparar con el siguiente valor
 
 esMenor:
-	;push	rsi			;me guardo el rsi para conocer la posicion donde debo insertar el valor
 	call	moverValores
-	;pop		rsi			;recupero la posicion donde voy a insertar el valor
 
 insertarValor:	
 	sub		rcx,rcx
 	mov		cx,word[valorLeido]
 	mov		word[vectorOrdenado+rsi],cx
+
+push	rdi
+
+sub		rax,rax
+sub		rbx,rbx
+
+mov		rax,rsi
+mov		rbx,2	
+idiv	bl		
+
+	mov		rcx,msjInsercion
+	mov		dx,word[vectorOrdenado+rsi]
+	mov		r8,rax
+	sub		rsp,32
+	call	printf
+	add		rsp,32
+
+pop		rdi
 ret
 
 ;***************************************************************
@@ -208,6 +218,13 @@ moverValores:
 moverSiguiente:
 	mov		ax,word[vectorOrdenado+rdi]		;me guardo el valor que hay al final del vector
 	mov		word[vectorOrdenado+rdi+2],ax	;muevo el ultimo valor a la posicion siguiente del vector
+	
+	push	rdi
+	push	rsi
+	;call	leerVector
+	call	imprimirMovimiento
+	pop		rsi
+	pop		rdi
 
 	cmp		rsi,rdi
 	je		finMoverValores					;si rsi = rdi es porque llegue a la posicion donde debo insertar
@@ -215,6 +232,35 @@ moverSiguiente:
 	jmp		moverSiguiente
 
 finMoverValores:
+ret
+
+;***************************************************************
+
+;-------------------------
+;IMPRIMIR MOVIMIENTO
+;-------------------------
+imprimirMovimiento:
+	sub		rax,rax
+	sub		rbx,rbx
+
+	sub		rdi,2		;me posiciono en el elemento de la lista que quiero mover (en words)
+	
+	mov		rax,rdi
+	mov		rbx,2
+	
+	idiv	bl			;divido por 2 para tener la posicion del elemento a desplazar
+
+	mov		rsi,rax		;guardo la posicion actual del elemento a desplazar
+	add		rax,1		;guardo la posicion a la que se movio el elemento
+
+	mov		rcx,msjMovimiento
+	mov		dx,word[vectorOrdenado+rdi]
+	mov		r8,rsi
+	mov		r9,rax
+	sub		rsp,32
+	call	printf
+	add		rsp,32
+	
 ret
 
 ;***************************************************************
@@ -251,4 +297,9 @@ inicioVec:
 	add		rsi,2
 	pop		rcx
 		loop inicioVec
+
+	mov		rcx,saltoDeLinea
+	sub		rsp,32
+	call	puts
+	add		rsp,32
 ret
