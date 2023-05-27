@@ -1,4 +1,13 @@
-;Ordenamiento por método de Inserción
+;*************************************************************************************************************
+;**                                     TRABAJO PRACTICO N° 16                                              **
+;**				                 ORDENAMIENTO POR METODO DE INSERCIÓN                                       **
+;**                                                                                                         **
+;**  1er Cuatrimestre - 2023                                                                                **
+;**                                                                                                         **
+;**  Nombre: Alexis Daniel, Guttlein Gareis                                                                 **
+;**  Padrón: 104431                                                                                         **
+;**                                                                                                         **
+;************************************************************************************************************
 
 ;Dado un archivo que contiene n números en BPF c/signo de 8 bits (n <= 30) se pide codificar en
 ;assembler Intel 80x86 un programa que imprima por pantalla que movimiento se realiza (por ejemplo
@@ -29,7 +38,6 @@
 ;Nota: no es correcto generar el archivo con un editor de textos de forma tal que cada registro sea una tira de 16
 ;caracteres 1 y 0. Se aconseja el uso de un editor hexadecimal.
 
-
 global	main
 extern  puts 
 extern  printf
@@ -39,21 +47,19 @@ extern  fread
 extern  sscanf
 
 section	.data
-    fileName        db  "archivo1.dat",0
+    fileName        db  "archivo2.dat",0
     modo            db  "rb",0
     msjErrorOpen	db	"Error apertura de archivo.",0,10
 
 	longRegistro	dw	0 
-	msjLong			db	"El registro tiene %hi valores",10,0
+	caracterVacio	dw	0
 
 	msjMovimiento	db	"Se desplaza el valor %hi desde la posicion %hi a la posicion %hi",10,0
 	msjInsercion	db	"Se inserta el valor %hi en la posicion %hi",10,0
+	msjValorLeido	db	"Valor leido: %hi",10,0
+	vectorFormat	db	"%hi ",0
 	saltoDeLinea	db	" ",10,0
-	caracterVacio	dw	0
-
-	debugFormat		db	"%hi ",0
-	debugRsi		db	"rsi: %i",10,0
-	msjDebug		db	"leyendo...",0
+	
 
 section	.bss
     registro		resw	30
@@ -70,7 +76,6 @@ main:
 	je		finProg
 
 	call	procesarRegistro
-	;call	leerVector
 
 	call	cierreArchivo
 
@@ -109,6 +114,18 @@ ret
 ;***************************************************************
 
 ;-------------------------
+;CIERRE ARCHIVO
+;-------------------------
+cierreArchivo:
+	mov		rcx,[idArchivo]
+	sub		rsp,32
+	call	fclose
+	add		rsp,32
+ret
+
+;***************************************************************
+
+;-------------------------
 ;PROCESAR REGISTRO
 ;-------------------------
 procesarRegistro:
@@ -128,25 +145,8 @@ leerSiguiente:
 	mov		rcx,[registro]
 	mov		word[valorLeido],cx	;me guardo el valor leido en una variable
 
-	;mov		word[vectorLeido+rsi],cx
-
-;mov		rcx,debugRsi
-;mov		rdx,rsi
-;sub		rsp,32
-;call	printf
-;add		rsp,32
-
-;mov		rcx,debugFormat
-;mov		dx,word[vectorLeido+rsi]
-;sub		rsp,32
-;call	printf
-;add		rsp,32
-
-;mov 	rcx,msjDebug
-;sub		rsp,32
-;call	puts  
-;add		rsp,32
 	push	rsi
+	call	imprimirValorLeido
 	call	ordenarValores
 	pop		rsi
 
@@ -177,7 +177,7 @@ compararSiguiente:
 
 	mov		bx,word[valorLeido]
 	cmp		word[vectorOrdenado+rsi],bx	;comparo valor del vector con valor leido
-	jg		esMenor
+	jg		esMenor						;jg: ordena de menor a mayor  /  jng: ordena de mayor a menor
 
 	add		rsi,2
 	jmp		compararSiguiente			;si es mayor, se tiene que comparar con el siguiente valor
@@ -193,7 +193,6 @@ insertarValor:
 	push	rdi
 	call	imprimirInsercion
 	pop		rdi
-
 ret
 
 ;***************************************************************
@@ -215,9 +214,8 @@ moverSiguiente:
 	
 	push	rdi
 	push	rsi
-	call	leerVector
+	call	imprimirVector
 	call	imprimirMovimiento
-	call	leerVector
 	pop		rsi
 	pop		rdi
 	
@@ -226,7 +224,7 @@ moverSiguiente:
 
 finMoverValores:
 	push	rsi
-	call	leerVector
+	call	imprimirVector
 	pop		rsi
 ret
 
@@ -278,28 +276,15 @@ imprimirInsercion:
 	call	printf
 	add		rsp,32
 
-	call	leerVector
+	call	imprimirVector
 ret
 
 ;***************************************************************
 
 ;-------------------------
-;CIERRE ARCHIVO
+;IMPRIMIR VECTOR
 ;-------------------------
-cierreArchivo:
-	mov		rcx,[idArchivo]
-	sub		rsp,32
-	call	fclose
-	add		rsp,32
-ret
-
-;***************************************************************
-
-;-------------------------
-;LEER VECTOR AL MOVER
-;-------------------------
-leerVector:
-;prueba para revisar si el vector tiene todos los valores
+imprimirVector:
 	mov		rsi,0
 	sub		rcx,rcx
 	sub		rdx,rdx
@@ -308,7 +293,7 @@ leerVector:
 inicioVec:
 	push	rcx
 
-	mov		rcx,debugFormat
+	mov		rcx,vectorFormat
 	mov		dx,word[vectorOrdenado+rsi]
 	sub		rsp,32
 	call	printf
@@ -321,5 +306,18 @@ inicioVec:
 	mov		rcx,saltoDeLinea
 	sub		rsp,32
 	call	puts
+	add		rsp,32
+ret
+
+;***************************************************************
+
+;-------------------------
+;IMPRIMIR VALOR LEIDO
+;-------------------------
+imprimirValorLeido:
+	mov		rcx,msjValorLeido
+	mov		dx,word[valorLeido]
+	sub		rsp,32
+	call	printf
 	add		rsp,32
 ret
