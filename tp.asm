@@ -39,7 +39,7 @@ extern  fread
 extern  sscanf
 
 section	.data
-    fileName        db  "archivo1.dat",0
+    fileName        db  "archivo2.dat",0
     modo            db  "rb",0
     msjErrorOpen	db	"Error apertura de archivo.",0,10
 
@@ -49,18 +49,17 @@ section	.data
 	msjLong			db	"El registro tiene %hi valores",10,0
 
 	;debugFormat		db	"numero leido: %hi",10,0
-	debugFormat		db	"%hi  ",0
+	debugFormat		db	"%hi ",0
 	debugRsi		db	"rsi: %i",10,0
 	debugVector		dw	1,2,3,4,5
 
 section	.bss
-    registro		resb	30
+    registro		resw	30
 	idArchivo       resq    1
     registroValido  resb    1
 	
 	valorLeido		resw	1
-	vectorLeido		resb	30
-	vectorOrdenado	resb	30
+	vectorOrdenado	resw	30
 	
 section	.text
 main:
@@ -169,25 +168,53 @@ ret
 ;-------------------------
 ordenarValores:
 	sub		rsi,rsi
+	sub		rbx,rbx
 compararSiguiente:	
 	sub		rax,rax	
 	mov		ax,word[longRegistro]
 	imul	ax,2
 
-	cmp		rsi,rax						;comparo long de registro con rsi para saber si estoy en una posicion sin valor
+	cmp		rsi,rax						;comparo long de registro con rsi para saber si estoy en el final del vector
 	je		insertarValor				;si no hay siguiente registro, se inserta directo al final
 
 ;falta comparar si el valor leido es menor al del vector
-	
+	mov		rdi,rax						;guardo en el rdi la posicion final del vector
 
+	mov		bx,word[valorLeido]
+	cmp		word[vectorOrdenado+rsi],bx	;comparo valor del vector con valor leido
+	jg		esMenor
 
 	add		rsi,2
 	jmp		compararSiguiente			;si es mayor, se tiene que comparar con el siguiente valor
+
+esMenor:
+	;push	rsi			;me guardo el rsi para conocer la posicion donde debo insertar el valor
+	call	moverValores
+	;pop		rsi			;recupero la posicion donde voy a insertar el valor
 
 insertarValor:	
 	sub		rcx,rcx
 	mov		cx,word[valorLeido]
 	mov		word[vectorOrdenado+rsi],cx
+ret
+
+;***************************************************************
+
+;-------------------------
+;MOVER VALORES
+;-------------------------
+moverValores:
+	sub		rax,rax
+moverSiguiente:
+	mov		ax,word[vectorOrdenado+rdi]		;me guardo el valor que hay al final del vector
+	mov		word[vectorOrdenado+rdi+2],ax	;muevo el ultimo valor a la posicion siguiente del vector
+
+	cmp		rsi,rdi
+	je		finMoverValores					;si rsi = rdi es porque llegue a la posicion donde debo insertar
+	sub		rdi,2
+	jmp		moverSiguiente
+
+finMoverValores:
 ret
 
 ;***************************************************************
