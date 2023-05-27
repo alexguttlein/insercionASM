@@ -69,7 +69,6 @@ main:
 	je		finProg
 
 	call	leerRegistro
-	call	ordenarValores
 	call	leerVector
 
 	call	cierreArchivo
@@ -119,7 +118,6 @@ ret
 ;-------------------------
 leerRegistro:
 	mov		rsi,0
-	mov		rdi,0
 leerSiguiente:
 	mov		rcx,registro 		;registro entrada
 	mov		rdx,1				;longitud registro
@@ -133,9 +131,9 @@ leerSiguiente:
 	jle		finLectura
 
 	mov		rcx,[registro]
-;	mov		word[valorLeido],cx	;me guardo el valor leido en una variable
+	mov		word[valorLeido],cx	;me guardo el valor leido en una variable
 
-	mov		word[vectorLeido+rsi],cx	
+	;mov		word[vectorLeido+rsi],cx
 
 ;mov		rcx,debugRsi
 ;mov		rdx,rsi
@@ -153,9 +151,11 @@ leerSiguiente:
 ;sub		rsp,32
 ;call	puts  
 ;add		rsp,32
-	
+	push	rsi
+	call	ordenarValores
+	pop		rsi
+
 	add		rsi,2
-	add		rdi,2
 
 	add		word[longRegistro],1	;aumento el conteo de longitud del registro
 	jmp		leerSiguiente			;leo el siguiente valor
@@ -168,6 +168,26 @@ ret
 ;ORDENAR VALORES
 ;-------------------------
 ordenarValores:
+	sub		rsi,rsi
+compararSiguiente:	
+	sub		rax,rax	
+	mov		ax,word[longRegistro]
+	imul	ax,2
+
+	cmp		rsi,rax						;comparo long de registro con rsi para saber si estoy en una posicion sin valor
+	je		insertarValor				;si no hay siguiente registro, se inserta directo al final
+
+;falta comparar si el valor leido es menor al del vector
+	
+
+
+	add		rsi,2
+	jmp		compararSiguiente			;si es mayor, se tiene que comparar con el siguiente valor
+
+insertarValor:	
+	sub		rcx,rcx
+	mov		cx,word[valorLeido]
+	mov		word[vectorOrdenado+rsi],cx
 ret
 
 ;***************************************************************
@@ -196,7 +216,7 @@ inicioVec:
 	push	rcx
 
 	mov		rcx,debugFormat
-	mov		dx,word[vectorLeido+rsi]
+	mov		dx,word[vectorOrdenado+rsi]
 	sub		rsp,32
 	call	printf
 	add		rsp,32
